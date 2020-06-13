@@ -2,8 +2,11 @@ package guru.springframework.msscssm.config;
 
 import guru.springframework.msscssm.domain.PaymentEvent;
 import guru.springframework.msscssm.domain.PaymentState;
+import guru.springframework.msscssm.service.PaymentServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
@@ -13,9 +16,11 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
 import java.util.EnumSet;
+import java.util.Random;
 
 import static guru.springframework.msscssm.domain.PaymentEvent.*;
 import static guru.springframework.msscssm.domain.PaymentState.*;
+import static guru.springframework.msscssm.service.PaymentServiceImpl.PAYMENT_ID_HEADER;
 
 @Slf4j
 @EnableStateMachineFactory
@@ -34,7 +39,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
 
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
-        transitions.withExternal().source(NEW).target(NEW).event(PRE_AUTHORIZE)
+        transitions.withExternal().source(NEW).target(NEW).event(PRE_AUTHORIZE).action(preAuthAction())
                 .and()
                 .withExternal().source(NEW).target(PRE_AUTH).event(PRE_AUTH_APPROVED)
                 .and()
@@ -50,5 +55,22 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
             }
         };
         config.withConfiguration().listener(adapter);
+    }
+
+    public Action<PaymentState, PaymentEvent> preAuthAction() {
+        return context -> {
+            if (new Random().nextInt(10) < 8)
+            {
+                context.getStateMachine()
+                        .sendEvent(MessageBuilder.withPayload(PRE_AUTH_APPROVED)
+                                .setHeader(PAYMENT_ID_HEADER, context.getMessageHeader(PAYMENT_ID_HEADER))
+                                .build());
+            } else {
+                context.getStateMachine()
+                        .sendEvent(MessageBuilder.withPayload(PRE_AUTH_DECLINED)
+                                .setHeader(PAYMENT_ID_HEADER, context.getMessageHeader(PAYMENT_ID_HEADER))
+                                .build());
+            }
+        };
     }
 }
