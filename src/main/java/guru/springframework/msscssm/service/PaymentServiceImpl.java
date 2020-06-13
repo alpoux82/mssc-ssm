@@ -16,7 +16,6 @@ import javax.transaction.Transactional;
 
 import static guru.springframework.msscssm.domain.PaymentEvent.*;
 import static guru.springframework.msscssm.domain.PaymentState.NEW;
-import static guru.springframework.msscssm.domain.PaymentState.PRE_AUTH;
 
 @RequiredArgsConstructor
 @Service
@@ -36,7 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
+    public StateMachine<PaymentState, PaymentEvent> preAuthPayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
         sendEvent(paymentId, sm, PRE_AUTHORIZE);
         return sm;
@@ -44,17 +43,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Transactional
     @Override
-    public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
+    public StateMachine<PaymentState, PaymentEvent> authPayment(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, AUTH_APPROVED);
-        return sm;
-    }
-
-    @Transactional
-    @Override
-    public StateMachine<PaymentState, PaymentEvent> declinePayment(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, AUTH_DECLINED);
+        sendEvent(paymentId, sm, AUTHORIZE);
         return sm;
     }
 
